@@ -2,7 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const initSqlJs = require("sql.js");
 const fs = require("fs");
-const DB_PATH = "/data/database.sqlite";
+const DB_PATH = "database.sqlite";
 
 const app = express();
 app.use(cors());
