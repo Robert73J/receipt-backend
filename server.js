@@ -2,7 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const initSqlJs = require("sql.js");
 const fs = require("fs");
-const DB_PATH = "database.sqlite";
+const DB_PATH = "/data/database.sqlite";
 
 const app = express();
 app.use(cors());
@@ -204,12 +204,13 @@ app.post("/receipt", (req, res) => {
 
 // Get receipt by number (for QR)
 app.get("/receipt/:receiptNo", (req, res) => {
+  
   if (!db) {
     return res.status(503).send("Database not ready");
   }
-
+  
   const { receiptNo } = req.params;
-
+  
   const stmt = db.prepare("SELECT * FROM receipts WHERE receiptNo = ?");
   stmt.bind([receiptNo]);
   
@@ -224,76 +225,82 @@ app.get("/receipt/:receiptNo", (req, res) => {
   if (!row) {
     return res.status(404).json({ message: "Receipt not found" });
   }
+  
+  // ✅ NOW row exists → safe to use
+  const date = row[7] ? new Date(row[7]) : new Date();
+  
+  const formattedDate = isNaN(date.getTime()) ?
+    "N/A" :
+    date.toLocaleString();
+  
+  let items = [];
+  
+  try {
+    items = JSON.parse(row[4]);
+  } catch (e) {
+    items = [];
+  }
+  
+  res.send(`
+  <html>
+  <head>
+    <title>Receipt ${row[1]}</title>
+    <style>
+      body { font-family: monospace; background:#f5f5f5; padding:20px; }
+      .receipt { width:300px; margin:auto; background:#fff; padding:10px; }
+      .row { display:flex; justify-content:space-between; }
+      .center { text-align:center; }
+      .divider { border-top:1px dashed #000; margin:6px 0; }
+      .bold { font-weight:bold; }
+    </style>
+  </head>
+  <body>
 
-let items = [];
-try {
-  items = JSON.parse(row[4]);
-} catch (e) {
-  items = [];
-}
+  <div class="receipt">
 
-res.send(`
-<html>
-<head>
-  <title>Receipt ${row[1]}</title>
-  <style>
-    body { font-family: monospace; background:#f5f5f5; padding:20px; }
-    .receipt { width:300px; margin:auto; background:#fff; padding:10px; }
-    .row { display:flex; justify-content:space-between; }
-    .center { text-align:center; }
-    .divider { border-top:1px dashed #000; margin:6px 0; }
-    .bold { font-weight:bold; }
-  </style>
-</head>
-<body>
+    <div class="center bold">${row[2]}</div>
+    <div class="center">${formattedDate}</div>
 
-<div class="receipt">
+    <div class="divider"></div>
 
-  <div class="center bold">${row[2]}</div>
-  <div class="center">${new Date(row[7]).toLocaleString()}</div>
+    <div>Receipt: ${row[1]}</div>
+    <div>Customer: ${row[3] || "-"}</div>
 
-  <div class="divider"></div>
+    <div class="divider"></div>
 
-  <div>Receipt: ${row[1]}</div>
-  <div>Customer: ${row[3] || "-"}</div>
+    ${items.map(item => `
+      <div class="row">
+        <span>${item.item}</span>
+        <span>${Number(item.amount || (item.qty * item.unitPrice)).toFixed(2)}</span>
+      </div>
+    `).join("")}
 
-  <div class="divider"></div>
+    <div class="divider"></div>
 
-  ${items.map(item => `
     <div class="row">
-      <span>${item.item}</span>
-      <span>${item.amount.toFixed(2)}</span>
+      <span>VAT</span>
+      <span>${Number(row[5]).toFixed(2)}</span>
     </div>
-  `).join("")}
 
-  <div class="divider"></div>
+    <div class="row bold">
+      <span>TOTAL</span>
+      <span>${Number(row[6]).toFixed(2)}</span>
+    </div>
 
-  <div class="row">
-    <span>VAT</span>
-    <span>${row[5]}</span>
+    <div class="divider"></div>
+
+    <div class="center">Thank You</div>
+
   </div>
 
-  <div class="row bold">
-    <span>TOTAL</span>
-    <span>${row[6]}</span>
-  </div>
-
-  <div class="divider"></div>
-
-  <div class="center">Thank You</div>
-
-</div>
-
-</body>
-</html>
-`);
+  </body>
+  </html>
+  `);
 });
 
 app.get("/", (req, res) => {
   res.send(`
-  <html>
-  <body style="font-family:Arial;text-align:center;margin-top:50px;">
-    <h2>Search Receipt</h2>
+    <h3>Receipt API is running ✅</h3>
     <form onsubmit="go(event)">
       <input id="r" placeholder="Enter Receipt No" required>
       <button>Search</button>
@@ -306,8 +313,6 @@ app.get("/", (req, res) => {
         window.location.href = "/receipt/" + val;
       }
     </script>
-  </body>
-  </html>
   `);
 });
 
