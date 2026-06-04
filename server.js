@@ -3,28 +3,6 @@ const cors = require("cors");
 const app = express();
 const pool = require("./db");
 
-(async () => {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS receipts (
-        id SERIAL PRIMARY KEY,
-        receiptno TEXT UNIQUE,
-        business TEXT,
-        customer TEXT,
-        items JSONB,
-        vat NUMERIC,
-        total NUMERIC,
-        status TEXT,
-        createdAt TIMESTAMP DEFAULT NOW()
-      );
-    `);
-    
-    console.log("✅ Table ready");
-  } catch (err) {
-    console.error("❌ Table creation error:", err);
-  }
-})();
-
 app.use(cors());
 app.use(express.json());
 app.use(express.static("public"));
