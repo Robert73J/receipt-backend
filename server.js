@@ -81,7 +81,7 @@ app.post("/receipt", async (req, res) => {
     receiptNo,
     business,
     customer,
-    cleanItems,
+    JSON.stringify(cleanItems),
     vat,
     total,
     status
