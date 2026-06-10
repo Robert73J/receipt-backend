@@ -104,7 +104,7 @@ app.post("/receipt", async (req, res) => {
     logo,
     phone,
     address,
-    JSON.stringify(cleanItems),
+    cleanItems, // 👈 MUST be object, NOT string
     vat,
     total,
     status
