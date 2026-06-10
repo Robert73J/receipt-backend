@@ -6,23 +6,22 @@ const pool = require("./db");
 (async () => {
   try {
     await pool.query(`
-      ALTER TABLE receipts
-      ADD COLUMN IF NOT EXISTS logo TEXT;
+      CREATE TABLE IF NOT EXISTS receipts (
+        id SERIAL PRIMARY KEY,
+        receiptno TEXT UNIQUE,
+        business TEXT,
+        customer TEXT,
+        items JSONB,
+        vat NUMERIC,
+        total NUMERIC,
+        status TEXT,
+        createdAt TIMESTAMP DEFAULT NOW()
+      );
     `);
     
-    await pool.query(`
-      ALTER TABLE receipts
-      ADD COLUMN IF NOT EXISTS phone TEXT;
-    `);
-    
-    await pool.query(`
-      ALTER TABLE receipts
-      ADD COLUMN IF NOT EXISTS address TEXT;
-    `);
-    
-    console.log("✅ New columns added");
+    console.log("✅ Table ready");
   } catch (err) {
-    console.error(err);
+    console.error("❌ Table creation error:", err);
   }
 })();
 
@@ -33,23 +32,11 @@ app.use(express.static("public"));
 // Save receipt
 app.post("/receipt", async (req, res) => {
   try {
-    let {
-  receiptNo,
-  business,
-  customer,
-  logo,
-  phone,
-  address,
-  items,
-  status
-} = req.body;
+    let { receiptNo, business, customer, items, status } = req.body;
     
     receiptNo = String(receiptNo || "").trim();
     business = String(business || "").trim();
     customer = String(customer || "").trim();
-    logo = String(logo || "").trim();
-    phone = String(phone || "").trim();
-    address = String(address || "").trim();
     status = status === "FINAL" ? "FINAL" : "DRAFT";
     
     if (!receiptNo || !business || !customer || !Array.isArray(items)) {
@@ -78,21 +65,14 @@ app.post("/receipt", async (req, res) => {
     const vat = +(subtotal * VAT_RATE).toFixed(2);
     const total = +(subtotal + vat).toFixed(2);
     
-    console.log("items =", items);
-    console.log("cleanItems =", cleanItems);
-    console.log("json =", JSON.stringify(cleanItems));
-    
-   await pool.query(
+    await pool.query(
   `INSERT INTO receipts
-  (receiptno, business, customer, logo, phone, address, items, vat, total, status, createdAt)
-  VALUES($1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9, $10, NOW())
+  (receiptno, business, customer, items, vat, total, status, createdAt)
+  VALUES($1, $2, $3, $4, $5, $6, $7, NOW())
   ON CONFLICT (receiptno)
   DO UPDATE SET
     business = EXCLUDED.business,
     customer = EXCLUDED.customer,
-    logo = EXCLUDED.logo,
-    phone = EXCLUDED.phone,
-    address = EXCLUDED.address,
     items = EXCLUDED.items,
     vat = EXCLUDED.vat,
     total = EXCLUDED.total,
@@ -101,16 +81,13 @@ app.post("/receipt", async (req, res) => {
     receiptNo,
     business,
     customer,
-    logo,
-    phone,
-    address,
-    JSON.stringify(cleanItems), // 👈 now correct
+    JSON.stringify(cleanItems),
     vat,
     total,
     status
   ]
 );
-
+    
     res.json({ vat, total });
     
   } catch (err) {
