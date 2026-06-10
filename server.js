@@ -82,21 +82,21 @@ app.post("/receipt", async (req, res) => {
     console.log("cleanItems =", cleanItems);
     console.log("json =", JSON.stringify(cleanItems));
     
-    await pool.query(
+   await pool.query(
   `INSERT INTO receipts
   (receiptno, business, customer, logo, phone, address, items, vat, total, status, createdAt)
-  VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
+  VALUES($1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9, $10, NOW())
   ON CONFLICT (receiptno)
   DO UPDATE SET
     business = EXCLUDED.business,
-      customer = EXCLUDED.customer,
-      logo = EXCLUDED.logo,
-      phone = EXCLUDED.phone,
-      address = EXCLUDED.address,
-      items = EXCLUDED.items,
-      vat = EXCLUDED.vat,
-      total = EXCLUDED.total,
-      status = EXCLUDED.status`,
+    customer = EXCLUDED.customer,
+    logo = EXCLUDED.logo,
+    phone = EXCLUDED.phone,
+    address = EXCLUDED.address,
+    items = EXCLUDED.items,
+    vat = EXCLUDED.vat,
+    total = EXCLUDED.total,
+    status = EXCLUDED.status`,
   [
     receiptNo,
     business,
@@ -104,7 +104,7 @@ app.post("/receipt", async (req, res) => {
     logo,
     phone,
     address,
-    JSON.stringify(cleanItems),  
+    JSON.stringify(cleanItems), // 👈 now correct
     vat,
     total,
     status
