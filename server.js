@@ -78,7 +78,9 @@ app.post("/receipt", async (req, res) => {
     const vat = +(subtotal * VAT_RATE).toFixed(2);
     const total = +(subtotal + vat).toFixed(2);
     
-    console.log("cleanItems =", JSON.stringify(cleanItems));
+    console.log("items =", items);
+    console.log("cleanItems =", cleanItems);
+    console.log("json =", JSON.stringify(cleanItems));
     
     await pool.query(
   `INSERT INTO receipts
@@ -102,7 +104,7 @@ app.post("/receipt", async (req, res) => {
     logo,
     phone,
     address,
-    cleanItems,
+    JSON.stringify(cleanItems),
     vat,
     total,
     status
