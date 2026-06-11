@@ -2,6 +2,8 @@ const express = require("express");
 const cors = require("cors");
 const app = express();
 const pool = require("./db");
+console.log("=== DEPLOY VERSION TEST ===");
+console.log("Debug build deployed");
 
 (async () => {
   try {
