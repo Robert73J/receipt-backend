@@ -79,18 +79,23 @@ app.post("/receipt", async (req, res) => {
     const total = +(subtotal + vat).toFixed(2);
     
     console.log("PARAMS:");
-    console.log([
-      receiptNo,
-      business,
-      customer,
-      logo,
-      phone,
-      address,
-      cleanItems,
-      vat,
-      total,
-      status
-    ]);
+console.log([
+  receiptNo,
+  business,
+  customer,
+  logo,
+  phone,
+  address,
+  JSON.stringify(cleanItems),
+  vat,
+  total,
+  status
+]);
+
+console.log(
+  "JSON being sent to Postgres:",
+  JSON.stringify(cleanItems)
+);
    
     await pool.query(
   `INSERT INTO receipts
